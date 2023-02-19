@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	lip "github.com/charmbracelet/lipgloss"
 )
 
 type model struct {
@@ -104,9 +105,10 @@ func (m model) View() string {
 
 	s += "\nPress q to quit.\n\n"
 
-	s += getStash(m.cursor)
+	s2 := getStash(m.cursor)
 
-	return s
+	descStyle := lip.NewStyle().Margin(2)
+	return lip.JoinHorizontal(lip.Top, descStyle.Render(s), descStyle.Render(s2))
 }
 
 func main() {
