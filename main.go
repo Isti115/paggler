@@ -7,8 +7,8 @@ import (
 	"os/exec"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
-	lip "github.com/charmbracelet/lipgloss"
+	bubbletea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 type model struct {
@@ -43,6 +43,12 @@ func getStash(i int) string {
 	)
 }
 
+func makePatch(name, content string) {
+	f, _ := os.Create(fmt.Sprintf("./%s.patch", name))
+	f.WriteString(content)
+	f.Close()
+}
+
 func initialModel() model {
 	return model{
 		// choices: []string{"Buy carrots", "Buy celery", "Buy kohlrabi"},
@@ -55,16 +61,16 @@ func initialModel() model {
 	}
 }
 
-func (m model) Init() tea.Cmd {
+func (m model) Init() bubbletea.Cmd {
 	return nil
 }
 
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m model) Update(msg bubbletea.Msg) (bubbletea.Model, bubbletea.Cmd) {
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	case bubbletea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "q":
-			return m, tea.Quit
+			return m, bubbletea.Quit
 		case "up", "k":
 			if m.cursor > 0 {
 				m.cursor--
@@ -73,6 +79,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.cursor < len(m.choices)-1 {
 				m.cursor++
 			}
+		case "p":
+			choice := m.choices[m.cursor]
+			makePatch(
+				strings.Trim(strings.Split(choice, ":")[2], " "),
+				getStash(m.cursor),
+			)
 		case "enter", " ":
 			_, ok := m.selected[m.cursor]
 			if ok {
@@ -107,12 +119,12 @@ func (m model) View() string {
 
 	s2 := getStash(m.cursor)
 
-	descStyle := lip.NewStyle().Margin(2)
-	return lip.JoinHorizontal(lip.Top, descStyle.Render(s), descStyle.Render(s2))
+	descStyle := lipgloss.NewStyle().Margin(2)
+	return lipgloss.JoinHorizontal(lipgloss.Top, descStyle.Render(s), descStyle.Render(s2))
 }
 
 func main() {
-	p := tea.NewProgram(initialModel())
+	p := bubbletea.NewProgram(initialModel())
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Alas, there's been an error: %v", err)
 		os.Exit(1)
