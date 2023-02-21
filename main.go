@@ -7,6 +7,8 @@ import (
 	"os/exec"
 	"strings"
 
+	"golang.org/x/term"
+
 	bubbletea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -128,8 +130,13 @@ func (m model) View() string {
 
 	s2 := getStash(m.cursor, true)
 
+	physicalWidth, physicalHeight, _ := term.GetSize(int(os.Stdout.Fd()))
 	descStyle := lipgloss.NewStyle().Margin(2)
-	return lipgloss.JoinHorizontal(lipgloss.Top, descStyle.Render(s), descStyle.Render(s2))
+	return lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		descStyle.MaxWidth(physicalWidth/2).Render(s),
+		descStyle.MaxWidth(physicalWidth/2).MaxHeight(physicalHeight).Render(s2),
+	)
 }
 
 func main() {
