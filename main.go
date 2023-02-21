@@ -35,12 +35,21 @@ func getStashes() []string {
 	return getLines(getOutput("git", "stash", "list"))
 }
 
-func getStash(i int) string {
-	return getOutput(
-		"git",
-		"-c", "color.ui=always",
-		"stash", "show", "-p", fmt.Sprintf("stash@{%d}", i),
-	)
+func getStash(i int, color bool) string {
+	// I don't like this, there should be a way to *conveniently* reduce the
+	// duplication! (e.g. `If(color).If(("-c", "color.ui=always"), ())`)
+	if color {
+		return getOutput(
+			"git",
+			"-c", "color.ui=always",
+			"stash", "show", "-p", fmt.Sprintf("stash@{%d}", i),
+		)
+	} else {
+		return getOutput(
+			"git",
+			"stash", "show", "-p", fmt.Sprintf("stash@{%d}", i),
+		)
+	}
 }
 
 func makePatch(name, content string) {
@@ -83,7 +92,7 @@ func (m model) Update(msg bubbletea.Msg) (bubbletea.Model, bubbletea.Cmd) {
 			choice := m.choices[m.cursor]
 			makePatch(
 				strings.Trim(strings.Split(choice, ":")[2], " "),
-				getStash(m.cursor),
+				getStash(m.cursor, false),
 			)
 		case "enter", " ":
 			_, ok := m.selected[m.cursor]
@@ -117,7 +126,7 @@ func (m model) View() string {
 
 	s += "\nPress q to quit.\n\n"
 
-	s2 := getStash(m.cursor)
+	s2 := getStash(m.cursor, true)
 
 	descStyle := lipgloss.NewStyle().Margin(2)
 	return lipgloss.JoinHorizontal(lipgloss.Top, descStyle.Render(s), descStyle.Render(s2))
