@@ -2,106 +2,66 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
-	"os/exec"
-	"strings"
 
-	"golang.org/x/term"
+	"github.com/charmbracelet/bubbletea"
 
-	bubbletea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"github.com/isti115/paggler/patches"
+	"github.com/isti115/paggler/stashes"
+)
+
+type Mode string
+
+const (
+	Patches Mode = "patches"
+	Stashes Mode = "stashes"
 )
 
 type model struct {
-	cursor   int
-	choices  []string
-	selected map[int]struct{}
-}
-
-func getOutput(name string, arg ...string) string {
-	fout, ferr := exec.Command(name, arg...).Output()
-
-	if ferr != nil {
-		log.Fatal(ferr)
-	}
-
-	return string(fout)
-}
-
-func getLines(text string) []string {
-	return strings.Split(strings.Trim(text, "\n"), "\n")
-}
-
-func getStashes() []string {
-	return getLines(getOutput("git", "stash", "list"))
-}
-
-func getStash(i int, color bool) string {
-	// I don't like this, there should be a way to *conveniently* reduce the
-	// duplication! (e.g. `If(color).If(("-c", "color.ui=always"), ())`)
-	if color {
-		return getOutput(
-			"git",
-			"-c", "color.ui=always",
-			"stash", "show", "-p", fmt.Sprintf("stash@{%d}", i),
-		)
-	} else {
-		return getOutput(
-			"git",
-			"stash", "show", "-p", fmt.Sprintf("stash@{%d}", i),
-		)
-	}
-}
-
-func makePatch(name, content string) {
-	f, _ := os.Create(fmt.Sprintf("./%s.patch", name))
-	f.WriteString(content)
-	f.Close()
+	mode    Mode
+	patches patches.Model
+	stashes stashes.Model
 }
 
 func initialModel() model {
 	return model{
-		// choices: []string{"Buy carrots", "Buy celery", "Buy kohlrabi"},
-		choices: getStashes(),
-
-		// A map which indicates which choices are selected. We're using
-		// the  map like a mathematical set. The keys refer to the indexes
-		// of the `choices` slice, above.
-		selected: make(map[int]struct{}),
+		mode:    Patches,
+		patches: patches.InitialModel(),
+		stashes: stashes.InitialModel(),
 	}
 }
 
-func (m model) Init() bubbletea.Cmd {
-	return nil
+func (m model) Init() tea.Cmd {
+	return tea.Batch(
+		m.patches.Init(),
+		m.stashes.Init(),
+	)
 }
 
-func (m model) Update(msg bubbletea.Msg) (bubbletea.Model, bubbletea.Cmd) {
+func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+
 	switch msg := msg.(type) {
-	case bubbletea.KeyMsg:
+	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "q":
-			return m, bubbletea.Quit
-		case "up", "k":
-			if m.cursor > 0 {
-				m.cursor--
-			}
-		case "down", "j":
-			if m.cursor < len(m.choices)-1 {
-				m.cursor++
-			}
-		case "p":
-			choice := m.choices[m.cursor]
-			makePatch(
-				strings.Trim(strings.Split(choice, ":")[2], " "),
-				getStash(m.cursor, false),
-			)
-		case "enter", " ":
-			_, ok := m.selected[m.cursor]
-			if ok {
-				delete(m.selected, m.cursor)
-			} else {
-				m.selected[m.cursor] = struct{}{}
+			return m, tea.Quit
+		case "p", "P":
+			m.mode = Patches
+		case "s", "S":
+			m.mode = Stashes
+		default:
+			switch m.mode {
+
+			case Patches:
+				pm, pc := m.patches.Update(msg)
+				m.patches = pm
+				return m, pc
+
+			case Stashes:
+				sm, sc := m.stashes.Update(msg)
+				m.stashes = sm
+				return m, sc
+
 			}
 		}
 	}
@@ -110,37 +70,21 @@ func (m model) Update(msg bubbletea.Msg) (bubbletea.Model, bubbletea.Cmd) {
 }
 
 func (m model) View() string {
-	s := "What should we buy at the market?\n\n"
+	switch m.mode {
 
-	for i, choice := range m.choices {
-		cursor := " "
-		if m.cursor == i {
-			cursor = ">"
-		}
+	case Patches:
+		return m.patches.View()
 
-		checked := " "
-		if _, ok := m.selected[i]; ok {
-			checked = "x"
-		}
+	case Stashes:
+		return m.stashes.View()
 
-		s += fmt.Sprintf("%s [%s] %s\n", cursor, checked, choice)
 	}
 
-	s += "\nPress q to quit.\n\n"
-
-	s2 := getStash(m.cursor, true)
-
-	physicalWidth, physicalHeight, _ := term.GetSize(int(os.Stdout.Fd()))
-	descStyle := lipgloss.NewStyle().Margin(2)
-	return lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		descStyle.MaxWidth(physicalWidth/2).Render(s),
-		descStyle.MaxWidth(physicalWidth/2).MaxHeight(physicalHeight).Render(s2),
-	)
+	return "Select a mode using `p` or `s`!"
 }
 
 func main() {
-	p := bubbletea.NewProgram(initialModel())
+	p := tea.NewProgram(initialModel(), tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Alas, there's been an error: %v", err)
 		os.Exit(1)
