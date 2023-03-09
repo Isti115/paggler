@@ -51,20 +51,40 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 			}
 
 		case ">":
-			exec.Command(
+			err := exec.Command(
 				"git", "apply",
 				filepath.Join("paggler", m.patches[m.cursor]),
 			).Run()
-			m.message = "applied: " + filepath.Join("paggler", m.patches[m.cursor])
+
+			if err != nil {
+				m.message = "error: " + err.Error()
+			} else {
+				os.Rename(
+					filepath.Join("paggler", m.patches[m.cursor]),
+					filepath.Join("paggler", "[x]-"+m.patches[m.cursor][4:]),
+				)
+				m.message = "applied: " + filepath.Join("paggler", m.patches[m.cursor])
+			}
 
 		case "<":
-			exec.Command(
+			err := exec.Command(
 				"git", "apply", "--reverse",
 				filepath.Join("paggler", m.patches[m.cursor]),
 			).Run()
-			m.message = "reversed: " + filepath.Join("paggler", m.patches[m.cursor])
+
+			if err != nil {
+				m.message = "error: " + err.Error()
+			} else {
+				os.Rename(
+					filepath.Join("paggler", m.patches[m.cursor]),
+					filepath.Join("paggler", "[_]-"+m.patches[m.cursor][4:]),
+				)
+				m.message = "reversed: " + filepath.Join("paggler", m.patches[m.cursor])
+			}
 		}
 	}
+
+	m.patches = getPatches()
 
 	return m, nil
 }
@@ -73,18 +93,12 @@ func (m Model) View() string {
 	s := "Select a patch to toggle!\n\n"
 
 	for i, choice := range m.patches {
-
 		cursor := " "
 		if m.cursor == i {
 			cursor = ">"
 		}
 
-		checked := " "
-		if true {
-			checked = "x"
-		}
-
-		s += fmt.Sprintf("%s [%s] %s\n", cursor, checked, choice)
+		s += fmt.Sprintf("%s %s\n", cursor, choice)
 	}
 
 	s += fmt.Sprintf("\n(Status: %s)\n", m.message)

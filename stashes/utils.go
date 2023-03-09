@@ -36,7 +36,7 @@ func getStash(i int) string {
 }
 
 func makePatch(name, content string) {
-	f, _ := os.Create(fmt.Sprintf("paggler/%s.patch.off", name))
+	f, _ := os.Create(fmt.Sprintf("paggler/[_]-%s.patch", name))
 	f.WriteString(content)
 	f.Close()
 }
