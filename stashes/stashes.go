@@ -9,6 +9,8 @@ import (
 
 	"github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+
+	"github.com/isti115/paggler/utils"
 )
 
 type Model struct {
@@ -66,7 +68,7 @@ func (m Model) View() string {
 
 	s += "\nPress q to quit.\n\n"
 
-	s2 := getStash(m.cursor)
+	s2 := utils.HighlightDiff(getStash(m.cursor))
 
 	physicalWidth, physicalHeight, _ := term.GetSize(int(os.Stdout.Fd()))
 	descStyle := lipgloss.NewStyle().Margin(2)

@@ -4,8 +4,6 @@ import (
 	"log"
 	"os"
 	"sort"
-
-	"github.com/isti115/paggler/utils"
 )
 
 type byName []string
@@ -49,5 +47,5 @@ func getPatch(path string) string {
 		log.Fatal(err)
 	}
 
-	return utils.HighlightDiff(string(patch))
+	return string(patch)
 }

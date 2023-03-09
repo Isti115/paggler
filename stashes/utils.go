@@ -6,8 +6,6 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-
-	"github.com/isti115/paggler/utils"
 )
 
 func getOutput(name string, arg ...string) string {
@@ -29,10 +27,10 @@ func getStashes() []string {
 }
 
 func getStash(i int) string {
-	return utils.HighlightDiff(getOutput(
+	return getOutput(
 		"git",
 		"stash", "show", "-p", fmt.Sprintf("stash@{%d}", i),
-	))
+	)
 }
 
 func makePatch(name, content string) {
