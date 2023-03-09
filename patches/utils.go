@@ -1,10 +1,9 @@
 package patches
 
 import (
-	"fmt"
 	"log"
 	"os"
-	"strings"
+	"github.com/isti115/paggler/utils"
 )
 
 func makeDir() {
@@ -25,40 +24,7 @@ func getPatches() []string {
 	}
 
 	return patches
-}
 
-var highlightRules = []struct {
-	prefix string
-	format string
-}{
-	{"diff", "[1m%s[0m"},
-	{"index", "[1m%s[0m"},
-	{"@@", "[36m%s[0m"},
-	{"---", "[1m[33m%s[0m"},
-	{"+++", "[1m[33m%s[0m"},
-	{"-", "[31m%s[0m"},
-	{"+", "[32m%s[0m"},
-}
-
-func highlightLine(line string) string {
-	for _, rule := range highlightRules {
-		if strings.HasPrefix(line, rule.prefix) {
-			return fmt.Sprintf(rule.format, line)
-		}
-	}
-
-	return line
-}
-
-func highlightDiff(diff string) string {
-	lines := strings.Split(diff, "\n")
-	colored := make([]string, len(lines))
-
-	for i, line := range lines {
-		colored[i] = highlightLine(line)
-	}
-
-	return strings.Join(colored[:], "\n")
 }
 
 func getPatch(path string) string {
@@ -68,5 +34,5 @@ func getPatch(path string) string {
 		log.Fatal(err)
 	}
 
-	return highlightDiff(string(patch))
+	return utils.HighlightDiff(string(patch))
 }

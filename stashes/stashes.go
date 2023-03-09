@@ -44,7 +44,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 			choice := m.stashes[m.cursor]
 			makePatch(
 				strings.Trim(strings.Split(choice, ":")[2], " "),
-				getStash(m.cursor, false),
+				getStash(m.cursor),
 			)
 		}
 	}
@@ -66,13 +66,13 @@ func (m Model) View() string {
 
 	s += "\nPress q to quit.\n\n"
 
-	s2 := getStash(m.cursor, true)
+	s2 := getStash(m.cursor)
 
 	physicalWidth, physicalHeight, _ := term.GetSize(int(os.Stdout.Fd()))
 	descStyle := lipgloss.NewStyle().Margin(2)
 	return lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		descStyle.MaxWidth(physicalWidth/2).Render(s),
+		descStyle.MaxWidth(physicalWidth/2).MaxHeight(physicalHeight).Render(s),
 		descStyle.MaxWidth(physicalWidth/2).MaxHeight(physicalHeight).Render(s2),
 	)
 }

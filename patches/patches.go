@@ -97,7 +97,7 @@ func (m Model) View() string {
 	descStyle := lipgloss.NewStyle().Margin(2)
 	return lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		descStyle.MaxWidth(physicalWidth/2).Render(s),
+		descStyle.MaxWidth(physicalWidth/2).MaxHeight(physicalHeight).Render(s),
 		descStyle.MaxWidth(physicalWidth/2).MaxHeight(physicalHeight).Render(s2),
 	)
 }

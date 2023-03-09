@@ -6,6 +6,8 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+
+	"github.com/isti115/paggler/utils"
 )
 
 func getOutput(name string, arg ...string) string {
@@ -26,21 +28,11 @@ func getStashes() []string {
 	return getLines(getOutput("git", "stash", "list"))
 }
 
-func getStash(i int, color bool) string {
-	// I don't like this, there should be a way to *conveniently* reduce the
-	// duplication! (e.g. `If(color).If(("-c", "color.ui=always"), ())`)
-	if color {
-		return getOutput(
-			"git",
-			"-c", "color.ui=always",
-			"stash", "show", "-p", fmt.Sprintf("stash@{%d}", i),
-		)
-	} else {
-		return getOutput(
-			"git",
-			"stash", "show", "-p", fmt.Sprintf("stash@{%d}", i),
-		)
-	}
+func getStash(i int) string {
+	return utils.HighlightDiff(getOutput(
+		"git",
+		"stash", "show", "-p", fmt.Sprintf("stash@{%d}", i),
+	))
 }
 
 func makePatch(name, content string) {
